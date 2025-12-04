@@ -1,0 +1,35 @@
+name: CI - AWS CodeBuild
+
+on:
+  push:
+    branches:
+      - main      # adjust branches as needed
+      - develop
+
+jobs:
+  trigger-codebuild:
+    name: Start CodeBuild project
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write      # required for OIDC → IAM role
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::801867402650:role/GitHubActions-CodeBuild-Runner
+          aws-region: us-east-1
+
+      - name: Trigger CodeBuild build
+        uses: aws-actions/aws-codebuild-run-build@v1
+        with:
+          project-name: video-analytics-build
+          # Optional: pass Git metadata to CodeBuild as env vars
+          env-vars-for-codebuild: >
+            GIT_COMMIT_SHA=${{ github.sha }},
+            GIT_BRANCH_NAME=${{ github.ref_name }}
