@@ -12,13 +12,19 @@ RUN npm run build
 # ---------- Runtime stage ----------
 FROM public.ecr.aws/docker/library/nginx:alpine
 
-# Create cache dir & give ownership to nginx user
-RUN mkdir -p /var/cache/nginx/client_temp \
-    && chown -R nginx:nginx /var/cache/nginx
+# Allow non-root nginx user to write where it needs to
+RUN mkdir -p /var/cache/nginx/client_temp /var/run /var/log/nginx \
+    && chown -R nginx:nginx /var/cache/nginx /var/run /var/log/nginx
 
+# Custom nginx config to listen on 8080
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Static files from build stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
-USER nginx
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 8080
 
+# Run as non-root user (assignment requirement)
+USER nginx
+
+CMD ["nginx", "-g", "daemon off;"]
