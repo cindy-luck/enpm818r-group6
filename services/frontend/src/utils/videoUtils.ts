@@ -2,18 +2,29 @@ import type { Video, VideoWithAnalytics } from '../types';
 import { config } from '../config/env';
 
 export function getVideoUrl(video: Video): string {
-  if (!config.s3BucketName) {
-    return `https://${video.s3_bucket_name}.s3.amazonaws.com/${video.s3_key_original}`;
-  }
-  return `https://${config.s3BucketName}.s3.amazonaws.com/${video.s3_key_original}`;
+  // Trim whitespace from bucket name to handle data quality issues
+  const bucket = (config.s3BucketName || video.s3_bucket_name).trim();
+  return `https://${bucket}.s3.amazonaws.com/${video.s3_key_original}`;
 }
 
 export function getThumbnailUrl(video: Video): string | null {
   if (!video.s3_key_thumbnail) {
     return null;
   }
-  const bucket = config.s3BucketName || video.s3_bucket_name;
-  return `https://${bucket}.s3.amazonaws.com/${video.s3_key_thumbnail}`;
+  // Trim whitespace from bucket name to handle data quality issues
+  const bucket = (config.s3BucketName || video.s3_bucket_name).trim();
+  const thumbnailUrl = `https://${bucket}.s3.amazonaws.com/${video.s3_key_thumbnail}`;
+  
+  // Log for debugging backend issues
+  if (bucket !== bucket.trim() || bucket.includes('\n') || bucket.includes('\r')) {
+    console.warn('[Frontend] Detected whitespace in bucket name:', {
+      original: video.s3_bucket_name,
+      trimmed: bucket,
+      videoId: video.id
+    });
+  }
+  
+  return thumbnailUrl;
 }
 
 export function combineVideoWithAnalytics(
