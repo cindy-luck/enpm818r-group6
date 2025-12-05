@@ -11,37 +11,50 @@ interface VideoPlayerProps {
 export function VideoPlayer({ video, onClose, onViewUpdate }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const viewIncrementedRef = useRef<string | null>(null);
+  const onViewUpdateRef = useRef(onViewUpdate);
+
+  // Keep ref updated without causing re-renders
+  useEffect(() => {
+    onViewUpdateRef.current = onViewUpdate;
+  }, [onViewUpdate]);
 
   useEffect(() => {
     // Only increment view if we have a video and haven't incremented for this specific video ID
-    if (video && viewIncrementedRef.current !== video.id) {
-      const currentVideoId = video.id;
-      viewIncrementedRef.current = currentVideoId;
-      
-      analyticsService
-        .incrementView(currentVideoId)
-        .then((response) => {
-          // Only update if this is still the current video
-          if (viewIncrementedRef.current === currentVideoId) {
-            onViewUpdate?.(currentVideoId, response.views);
-          }
-        })
-        .catch((error) => {
-          console.error('Failed to increment view:', error);
-          // Reset on error so it can retry if needed
-          if (viewIncrementedRef.current === currentVideoId) {
-            viewIncrementedRef.current = null;
-          }
-        });
+    if (!video) return;
+
+    const currentVideoId = video.id;
+    
+    // Check if we've already incremented for this video
+    if (viewIncrementedRef.current === currentVideoId) {
+      return; // Already incremented, don't do it again
     }
 
-    // Cleanup: reset when video ID changes or component unmounts
-    // This allows reopening the same video to increment view again
+    // Mark as incremented immediately to prevent double calls
+    viewIncrementedRef.current = currentVideoId;
+    
+    analyticsService
+      .incrementView(currentVideoId)
+      .then((response) => {
+        // Use ref to avoid dependency on onViewUpdate
+        onViewUpdateRef.current?.(currentVideoId, response.views);
+      })
+      .catch((error) => {
+        console.error('Failed to increment view:', error);
+        // Reset on error so it can retry if needed
+        if (viewIncrementedRef.current === currentVideoId) {
+          viewIncrementedRef.current = null;
+        }
+      });
+
+    // Cleanup: only reset when video ID actually changes (not on every render)
     return () => {
-      // Reset when video changes (allows same video to be reopened)
-      viewIncrementedRef.current = null;
+      // Only reset if we're switching to a different video
+      // This allows reopening the same video to increment view again
+      if (viewIncrementedRef.current === currentVideoId) {
+        viewIncrementedRef.current = null;
+      }
     };
-  }, [video?.id, onViewUpdate]); // Only depend on video.id, not the whole video object
+  }, [video?.id]); // Only depend on video.id - removed onViewUpdate from dependencies
 
   if (!video) return null;
 

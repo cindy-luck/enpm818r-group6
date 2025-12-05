@@ -57,6 +57,25 @@ export function Dashboard() {
     fetchVideos();
   }, []);
 
+  // Poll for videos with PENDING or PROCESSING status
+  useEffect(() => {
+    const hasPendingVideos = videos.some(
+      (v) => v.status === 'PENDING' || v.status === 'PROCESSING'
+    );
+
+    if (!hasPendingVideos) {
+      return; // No need to poll if all videos are completed/failed
+    }
+
+    // Poll every 5 seconds for status updates
+    const interval = setInterval(() => {
+      fetchVideos();
+    }, 5000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [videos.map(v => `${v.id}-${v.status}`).join(',')]); // Only re-run when status changes
+
   const handleLikeUpdate = useCallback((videoId: string, newLikes: number) => {
     setVideos((prev) =>
       prev.map((v) => (v.id === videoId ? { ...v, likes: newLikes } : v))
@@ -150,14 +169,12 @@ export function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between mb-4">
             {/* Desktop Title / Mobile Play Logo */}
-            <div className="flex items-center">
-              {/* Mobile: Play Button Logo */}
-              <div className="sm:hidden">
-                <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
-                  <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
+            <div className="flex items-center gap-3">
+              {/* Play Button Logo - Always visible */}
+              <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex-shrink-0">
+                <svg className="w-6 h-6 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
               </div>
               {/* Desktop: Title */}
               <div className="hidden sm:block">
