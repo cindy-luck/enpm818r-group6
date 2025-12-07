@@ -18,28 +18,43 @@ spec:
         app: video-analytics
         component: processor
     spec:
+      serviceAccountName: app-sa
       containers:
         - name: va-processor
           image: 801867402650.dkr.ecr.us-east-1.amazonaws.com/processor-api:latest
-          imagePullPolicy: IfNotPresent
-          envFrom:
-            - configMapRef:
-                name: video-analytics-config
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8082
           env:
+            - name: PORT
+              value: "8082"
+            - name: AWS_REGION
+              value: "us-east-1"
             - name: S3_BUCKET_NAME
               value: "va-video-assets-dev-801867402650"
-            - name: SQS_QUEUE_URL
-              value: "http://local-sqs-dev"
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "64Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-          livenessProbe:
-            exec:
-              command: ["sh", "-c", "echo ok"]
-            initialDelaySeconds: 30
-            periodSeconds: 30
-      serviceAccountName: app-sa
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: DB_HOST
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "video_db"
+            - name: DB_USER
+              value: "enpm818r_master_db"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: DB_PASSWORD
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: AWS_SECRET_ACCESS_KEY

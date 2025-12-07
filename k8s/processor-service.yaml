@@ -1,17 +1,17 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: va-analytics-svc
+  name: va-processor-svc
   namespace: video-analytics
   labels:
     app: video-analytics
-    component: analytics-api
+    component: processor
 spec:
   type: ClusterIP
   selector:
     app: video-analytics
-    component: analytics-api
+    component: processor
   ports:
     - name: http
       port: 80
-      targetPort: 8083
+      targetPort: 8082

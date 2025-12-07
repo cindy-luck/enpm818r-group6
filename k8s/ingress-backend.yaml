@@ -1,24 +1,17 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: video-analytics-ingress
+  name: video-analytics-ingress-backend
   namespace: video-analytics
   annotations:
     kubernetes.io/ingress.class: nginx
-    # --- ADD THIS LINE ---
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # --- ADD THIS LINE ---
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
 spec:
   rules:
     - http:
         paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: va-frontend-svc
-                port:
-                  number: 80
-          # --- CHANGE THIS BLOCK ---
           - path: /api/upload(/|$)(.*)
             pathType: ImplementationSpecific
             backend:
@@ -26,7 +19,6 @@ spec:
                 name: va-uploader-svc
                 port:
                   number: 80
-          # --- AND THIS ONE ---
           - path: /api/analytics(/|$)(.*)
             pathType: ImplementationSpecific
             backend:

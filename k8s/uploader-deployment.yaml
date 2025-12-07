@@ -18,39 +18,48 @@ spec:
         app: video-analytics
         component: uploader-api
     spec:
+      serviceAccountName: app-sa
       containers:
         - name: va-uploader-api
           image: 801867402650.dkr.ecr.us-east-1.amazonaws.com/uploader-api:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
-            - containerPort: 8080
-          envFrom:
-            - configMapRef:
-                name: video-analytics-config
+            - containerPort: 8081
           env:
             - name: PORT
-              value: "8080"
+              value: "8081"
+            - name: AWS_REGION
+              value: "us-east-1"
             - name: S3_BUCKET_NAME
               value: "va-video-assets-dev-801867402650"
-            - name: SQS_QUEUE_URL
-              value: "http://local-sqs-dev"
-          resources:
-            requests:
-              cpu: "50m"
-              memory: "64Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 30
-      serviceAccountName: app-sa
+            # Internal K8s DNS for Processor
+            - name: PROCESSOR_API_URL
+              value: "http://va-processor-svc.video-analytics.svc.cluster.local:80/process"
+            # RDS Settings
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: DB_HOST
+            - name: DB_PORT
+              value: "5432" # Default RDS Postgres port (check if you changed it to 5433 on RDS)
+            - name: DB_NAME
+              value: "video_db"
+            - name: DB_USER
+              value: "enpm818r_master_db"
+            # Secrets
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: DB_PASSWORD
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: AWS_SECRET_ACCESS_KEY

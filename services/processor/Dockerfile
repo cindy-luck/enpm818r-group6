@@ -18,6 +18,7 @@ COPY --from=builder /usr/src/app/dist ./dist
 
 # Create non-root user
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /usr/src/app
 USER appuser
 
 ENV NODE_ENV=production

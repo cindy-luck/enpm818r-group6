@@ -6,3 +6,5 @@ build
 *.pem
 *.mp4
 *.png
+secrets.yaml
+k8s/secrets.yaml
